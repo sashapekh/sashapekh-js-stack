@@ -1,10 +1,12 @@
-version: "3.9"
+version: "3.4"
 services:
   api:
     build: ./backend-nest
     container_name: api
     restart: unless-stopped
     command: npm run start
+    ports:
+    - "8080:8080"
     networks:
       - docker-sashaperk-network
 
@@ -12,20 +14,46 @@ services:
     build: ./frontend-react
     container_name: frontend
     restart: unless-stopped
+    command: serve -s build -l 3000
     networks:
       - docker-sashaperk-network
 
   nginx:
     image: nginx:stable-alpine
     container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
     ports:
       - "80:80"
     depends_on:
       - frontend
-      - backend
+      - api
     networks:
       - docker-sashaperk-network
 
+  postgres:
+    image: postgres:13.2-alpine
+    container_name: postgres
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=postgres
+    networks:
+      - docker-sashaperk-network
+
+  rabbitmq:
+    image: rabbitmq:3.8.14-alpine
+    container_name: rabbitmq
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      - docker-sashaperk-network
+
+volumes:
+  postgres_db:
+  rabbitmq:
 
 networks:
   docker-sashaperk-network:
